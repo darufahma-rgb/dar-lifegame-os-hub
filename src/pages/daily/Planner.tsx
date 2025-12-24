@@ -1,40 +1,107 @@
 import { Helmet } from "react-helmet-async";
 import SubpageLayout from "@/components/layout/SubpageLayout";
-import { useState } from "react";
-import { Plus, Calendar, Clock, CheckCircle2, Circle, MoreHorizontal } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Calendar, Clock, CheckCircle2, Circle, MoreHorizontal, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
 
 interface Task {
   id: string;
   title: string;
-  time?: string;
+  description: string | null;
+  due_date: string | null;
+  due_time: string | null;
+  priority: string;
   completed: boolean;
-  category: string;
-  categoryColor: string;
 }
 
-const mockTasks: Task[] = [
-  { id: "1", title: "Morning Workout", time: "06:00", completed: true, category: "Health", categoryColor: "bg-pink-500" },
-  { id: "2", title: "Team Standup Meeting", time: "09:00", completed: true, category: "Work", categoryColor: "bg-purple-500" },
-  { id: "3", title: "Review Project Docs", time: "10:00", completed: false, category: "Work", categoryColor: "bg-purple-500" },
-  { id: "4", title: "Lunch with Client", time: "12:30", completed: false, category: "Work", categoryColor: "bg-purple-500" },
-  { id: "5", title: "Write Blog Post", time: "14:00", completed: false, category: "Content", categoryColor: "bg-cyan-500" },
-  { id: "6", title: "Grocery Shopping", time: "17:00", completed: false, category: "Life", categoryColor: "bg-amber-500" },
-  { id: "7", title: "Evening Walk", time: "18:30", completed: false, category: "Health", categoryColor: "bg-pink-500" },
-];
-
 const DailyPlanner = () => {
-  const [tasks, setTasks] = useState(mockTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newTask, setNewTask] = useState("");
+  const { user } = useAuth();
+  const { toast } = useToast();
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-  const toggleTask = (id: string) => {
-    setTasks(tasks.map(task => 
-      task.id === id ? { ...task, completed: !task.completed } : task
-    ));
+  useEffect(() => {
+    if (user) fetchTasks();
+  }, [user]);
+
+  const fetchTasks = async () => {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      setTasks(data || []);
+    }
+    setLoading(false);
+  };
+
+  const addTask = async () => {
+    if (!user || !newTask.trim()) return;
+    
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert({
+        user_id: user.id,
+        title: newTask,
+        priority: 'medium',
+      })
+      .select()
+      .single();
+
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else if (data) {
+      setTasks([data, ...tasks]);
+      setNewTask("");
+      toast({ title: "Task added!" });
+    }
+  };
+
+  const toggleTask = async (id: string, completed: boolean) => {
+    const { error } = await supabase
+      .from('tasks')
+      .update({ 
+        completed: !completed,
+        completed_at: !completed ? new Date().toISOString() : null
+      })
+      .eq('id', id);
+
+    if (!error) {
+      setTasks(tasks.map(task => 
+        task.id === id ? { ...task, completed: !completed } : task
+      ));
+    }
+  };
+
+  const deleteTask = async (id: string) => {
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', id);
+
+    if (!error) {
+      setTasks(tasks.filter(t => t.id !== id));
+      toast({ title: "Task deleted" });
+    }
   };
 
   const completedCount = tasks.filter(t => t.completed).length;
-  const progress = (completedCount / tasks.length) * 100;
+  const progress = tasks.length > 0 ? (completedCount / tasks.length) * 100 : 0;
+
+  const priorityColors: Record<string, string> = {
+    high: "bg-pink-500/20 text-pink-400",
+    medium: "bg-amber-500/20 text-amber-400",
+    low: "bg-blue-500/20 text-blue-400",
+  };
 
   return (
     <>
@@ -65,63 +132,77 @@ const DailyPlanner = () => {
               </div>
               <span className="text-foreground font-medium">{completedCount}/{tasks.length}</span>
             </div>
-            <Button variant="hero" size="sm">
-              <Plus className="w-4 h-4" />
-              Add Task
-            </Button>
           </div>
+        </div>
+
+        {/* Add Task */}
+        <div className="flex gap-3 mb-6">
+          <Input
+            placeholder="Add a new task..."
+            value={newTask}
+            onChange={(e) => setNewTask(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && addTask()}
+            className="bg-muted/50"
+          />
+          <Button variant="hero" onClick={addTask}>
+            <Plus className="w-4 h-4" />
+            Add
+          </Button>
         </div>
 
         {/* Tasks */}
         <div className="bg-card/30 rounded-2xl border border-border/50 overflow-hidden">
-          <div className="divide-y divide-border/30">
-            {tasks.map((task) => (
-              <div 
-                key={task.id}
-                className="flex items-center gap-4 p-4 hover:bg-muted/20 transition-colors group"
-              >
-                <button
-                  onClick={() => toggleTask(task.id)}
-                  className="flex-shrink-0"
+          {loading ? (
+            <div className="p-6 text-muted-foreground">Loading...</div>
+          ) : tasks.length === 0 ? (
+            <div className="p-12 text-center text-muted-foreground">
+              <p>No tasks yet. Add one above!</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border/30">
+              {tasks.map((task) => (
+                <div 
+                  key={task.id}
+                  className="flex items-center gap-4 p-4 hover:bg-muted/20 transition-colors group"
                 >
-                  {task.completed ? (
-                    <CheckCircle2 className="w-6 h-6 text-primary" />
-                  ) : (
-                    <Circle className="w-6 h-6 text-muted-foreground hover:text-primary transition-colors" />
-                  )}
-                </button>
-                
-                <div className="flex-1 min-w-0">
-                  <div className={`font-medium ${task.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                    {task.title}
-                  </div>
-                  <div className="flex items-center gap-3 mt-1">
-                    {task.time && (
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="w-3 h-3" />
-                        {task.time}
-                      </span>
+                  <button
+                    onClick={() => toggleTask(task.id, task.completed)}
+                    className="flex-shrink-0"
+                  >
+                    {task.completed ? (
+                      <CheckCircle2 className="w-6 h-6 text-primary" />
+                    ) : (
+                      <Circle className="w-6 h-6 text-muted-foreground hover:text-primary transition-colors" />
                     )}
-                    <span className="flex items-center gap-1 text-xs">
-                      <span className={`w-2 h-2 rounded-full ${task.categoryColor}`} />
-                      <span className="text-muted-foreground">{task.category}</span>
-                    </span>
+                  </button>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className={`font-medium ${task.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                      {task.title}
+                    </div>
+                    <div className="flex items-center gap-3 mt-1">
+                      {task.due_time && (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3" />
+                          {task.due_time}
+                        </span>
+                      )}
+                      <span className={`px-2 py-0.5 rounded text-xs ${priorityColors[task.priority]}`}>
+                        {task.priority}
+                      </span>
+                    </div>
                   </div>
+
+                  <button 
+                    onClick={() => deleteTask(task.id)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-
-                <button className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground">
-                  <MoreHorizontal className="w-5 h-5" />
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <div className="p-4 border-t border-border/30">
-            <button className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors text-sm">
-              <Plus className="w-4 h-4" />
-              Add new task
-            </button>
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </SubpageLayout>
     </>
