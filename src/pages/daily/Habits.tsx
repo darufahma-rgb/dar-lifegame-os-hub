@@ -1,41 +1,129 @@
 import { Helmet } from "react-helmet-async";
 import SubpageLayout from "@/components/layout/SubpageLayout";
-import { useState } from "react";
-import { Flame, Check, X, Plus, Trophy, Zap } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Flame, Check, Plus, Trophy, Zap, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface Habit {
   id: string;
   name: string;
   emoji: string;
   streak: number;
-  weeklyProgress: boolean[];
-  category: string;
+  best_streak: number;
+  category: string | null;
 }
 
-const mockHabits: Habit[] = [
-  { id: "1", name: "Morning Exercise", emoji: "🏃", streak: 14, weeklyProgress: [true, true, true, true, true, false, false], category: "Health" },
-  { id: "2", name: "Read 30 mins", emoji: "📚", streak: 21, weeklyProgress: [true, true, true, true, true, true, false], category: "Growth" },
-  { id: "3", name: "Meditate", emoji: "🧘", streak: 7, weeklyProgress: [true, true, false, true, true, false, false], category: "Mind" },
-  { id: "4", name: "Drink 8 glasses water", emoji: "💧", streak: 30, weeklyProgress: [true, true, true, true, true, true, true], category: "Health" },
-  { id: "5", name: "No social media before 12pm", emoji: "📵", streak: 5, weeklyProgress: [true, true, true, false, true, false, false], category: "Focus" },
-  { id: "6", name: "Journal before bed", emoji: "📝", streak: 10, weeklyProgress: [true, true, true, true, true, true, false], category: "Mind" },
-];
+interface HabitCompletion {
+  id: string;
+  habit_id: string;
+  completed_date: string;
+}
 
 const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const Habits = () => {
-  const [habits, setHabits] = useState(mockHabits);
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [completions, setCompletions] = useState<HabitCompletion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newHabit, setNewHabit] = useState("");
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  const toggleDay = (habitId: string, dayIndex: number) => {
-    setHabits(habits.map(habit => {
-      if (habit.id === habitId) {
-        const newProgress = [...habit.weeklyProgress];
-        newProgress[dayIndex] = !newProgress[dayIndex];
-        return { ...habit, weeklyProgress: newProgress };
-      }
-      return habit;
-    }));
+  useEffect(() => {
+    if (user) {
+      fetchHabits();
+      fetchCompletions();
+    }
+  }, [user]);
+
+  const fetchHabits = async () => {
+    const { data, error } = await supabase
+      .from('habits')
+      .select('*')
+      .order('created_at', { ascending: true });
+    
+    if (!error) setHabits(data || []);
+    setLoading(false);
+  };
+
+  const fetchCompletions = async () => {
+    // Get last 7 days of completions
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    
+    const { data } = await supabase
+      .from('habit_completions')
+      .select('*')
+      .gte('completed_date', weekAgo.toISOString().split('T')[0]);
+    
+    setCompletions(data || []);
+  };
+
+  const addHabit = async () => {
+    if (!user || !newHabit.trim()) return;
+    
+    const { data, error } = await supabase
+      .from('habits')
+      .insert({
+        user_id: user.id,
+        name: newHabit,
+        emoji: '✅',
+      })
+      .select()
+      .single();
+
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else if (data) {
+      setHabits([...habits, data]);
+      setNewHabit("");
+      toast({ title: "Habit added!" });
+    }
+  };
+
+  const toggleCompletion = async (habitId: string, date: string) => {
+    if (!user) return;
+    
+    const existing = completions.find(c => c.habit_id === habitId && c.completed_date === date);
+    
+    if (existing) {
+      await supabase.from('habit_completions').delete().eq('id', existing.id);
+      setCompletions(completions.filter(c => c.id !== existing.id));
+    } else {
+      const { data } = await supabase
+        .from('habit_completions')
+        .insert({ habit_id: habitId, user_id: user.id, completed_date: date })
+        .select()
+        .single();
+      
+      if (data) setCompletions([...completions, data]);
+    }
+  };
+
+  const deleteHabit = async (id: string) => {
+    await supabase.from('habits').delete().eq('id', id);
+    setHabits(habits.filter(h => h.id !== id));
+    toast({ title: "Habit deleted" });
+  };
+
+  const getWeekDates = () => {
+    const dates = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      dates.push(date.toISOString().split('T')[0]);
+    }
+    return dates;
+  };
+
+  const weekDates = getWeekDates();
+
+  const isCompleted = (habitId: string, date: string) => {
+    return completions.some(c => c.habit_id === habitId && c.completed_date === date);
   };
 
   const totalStreak = habits.reduce((sum, h) => sum + h.streak, 0);
@@ -44,7 +132,6 @@ const Habits = () => {
     <>
       <Helmet>
         <title>Habits Tracker - Dar Lifegame OS</title>
-        <meta name="description" content="Build and track your daily habits with Dar Lifegame OS Habit Tracker." />
       </Helmet>
 
       <SubpageLayout 
@@ -74,7 +161,7 @@ const Habits = () => {
               <span className="text-sm">Today Done</span>
             </div>
             <div className="text-3xl font-display font-bold text-foreground">
-              {habits.filter(h => h.weeklyProgress[4]).length}/{habits.length}
+              {completions.filter(c => c.completed_date === weekDates[6]).length}/{habits.length}
             </div>
           </div>
           <div className="bg-card/30 rounded-xl border border-border/50 p-4">
@@ -83,66 +170,88 @@ const Habits = () => {
               <span className="text-sm">Best Streak</span>
             </div>
             <div className="text-3xl font-display font-bold text-foreground">
-              {Math.max(...habits.map(h => h.streak))}
+              {Math.max(...habits.map(h => h.best_streak), 0)}
             </div>
           </div>
         </div>
 
-        {/* Habits Grid */}
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-display text-lg font-semibold text-foreground">This Week</h3>
-          <Button variant="outline" size="sm">
+        {/* Add Habit */}
+        <div className="flex gap-3 mb-6">
+          <Input
+            placeholder="Add a new habit..."
+            value={newHabit}
+            onChange={(e) => setNewHabit(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && addHabit()}
+            className="bg-muted/50"
+          />
+          <Button variant="outline" onClick={addHabit}>
             <Plus className="w-4 h-4" />
-            New Habit
+            Add
           </Button>
         </div>
 
-        <div className="bg-card/30 rounded-2xl border border-border/50 overflow-hidden">
-          {/* Header */}
-          <div className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-border/50 text-xs text-muted-foreground">
-            <div className="col-span-5">Habit</div>
-            {weekDays.map((day, idx) => (
-              <div key={day} className={`col-span-1 text-center ${idx === 4 ? "text-primary" : ""}`}>
-                {day}
-              </div>
-            ))}
+        {/* Habits Grid */}
+        {loading ? (
+          <div className="text-muted-foreground">Loading...</div>
+        ) : habits.length === 0 ? (
+          <div className="bg-card/30 rounded-2xl border border-border/50 p-12 text-center">
+            <Zap className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <p className="text-muted-foreground">No habits yet. Add one above!</p>
           </div>
-
-          {/* Habits */}
-          <div className="divide-y divide-border/30">
-            {habits.map((habit) => (
-              <div 
-                key={habit.id}
-                className="grid grid-cols-12 gap-2 px-4 py-4 hover:bg-muted/20 transition-colors items-center"
-              >
-                <div className="col-span-5 flex items-center gap-3">
-                  <span className="text-2xl">{habit.emoji}</span>
-                  <div>
-                    <div className="font-medium text-foreground">{habit.name}</div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Flame className="w-3 h-3 text-orange-500" />
-                      <span>{habit.streak} day streak</span>
-                    </div>
-                  </div>
+        ) : (
+          <div className="bg-card/30 rounded-2xl border border-border/50 overflow-hidden">
+            {/* Header */}
+            <div className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-border/50 text-xs text-muted-foreground">
+              <div className="col-span-5">Habit</div>
+              {weekDays.map((day, idx) => (
+                <div key={day} className={`col-span-1 text-center ${idx === 6 ? "text-primary" : ""}`}>
+                  {day}
                 </div>
-                {habit.weeklyProgress.map((done, dayIdx) => (
-                  <div key={dayIdx} className="col-span-1 flex justify-center">
-                    <button
-                      onClick={() => toggleDay(habit.id, dayIdx)}
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-                        done 
-                          ? "bg-primary/20 border-2 border-primary text-primary" 
-                          : "bg-muted/50 border-2 border-transparent text-muted-foreground hover:border-primary/30"
-                      }`}
+              ))}
+            </div>
+
+            {/* Habits */}
+            <div className="divide-y divide-border/30">
+              {habits.map((habit) => (
+                <div 
+                  key={habit.id}
+                  className="grid grid-cols-12 gap-2 px-4 py-4 hover:bg-muted/20 transition-colors items-center group"
+                >
+                  <div className="col-span-5 flex items-center gap-3">
+                    <span className="text-2xl">{habit.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-foreground truncate">{habit.name}</div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Flame className="w-3 h-3 text-orange-500" />
+                        <span>{habit.streak} day streak</span>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => deleteHabit(habit.id)}
+                      className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
                     >
-                      {done ? <Check className="w-4 h-4" /> : ""}
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                ))}
-              </div>
-            ))}
+                  {weekDates.map((date, dayIdx) => (
+                    <div key={date} className="col-span-1 flex justify-center">
+                      <button
+                        onClick={() => toggleCompletion(habit.id, date)}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                          isCompleted(habit.id, date)
+                            ? "bg-primary/20 border-2 border-primary text-primary" 
+                            : "bg-muted/50 border-2 border-transparent text-muted-foreground hover:border-primary/30"
+                        }`}
+                      >
+                        {isCompleted(habit.id, date) && <Check className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </SubpageLayout>
     </>
   );

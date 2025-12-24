@@ -1,65 +1,96 @@
 import { Helmet } from "react-helmet-async";
 import SubpageLayout from "@/components/layout/SubpageLayout";
-import { useState } from "react";
-import { Pencil, Plus, Calendar, Smile, Frown, Meh, Sparkles } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Pencil, Plus, Calendar, Smile, Frown, Meh, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface JournalEntry {
   id: string;
-  date: string;
+  entry_date: string;
   title: string;
-  content: string;
-  mood: "happy" | "neutral" | "sad";
-  tags: string[];
+  content: string | null;
+  mood: string | null;
+  tags: string[] | null;
 }
 
-const mockEntries: JournalEntry[] = [
-  {
-    id: "1",
-    date: "2024-02-14",
-    title: "A Great Day!",
-    content: "Had an amazing workout this morning and finished my project ahead of schedule. Feeling accomplished!",
-    mood: "happy",
-    tags: ["productivity", "fitness"],
-  },
-  {
-    id: "2",
-    date: "2024-02-13",
-    title: "Reflections on Growth",
-    content: "Reading 'Atomic Habits' and realizing how small changes can lead to big results. Need to be more patient with myself.",
-    mood: "neutral",
-    tags: ["learning", "self-improvement"],
-  },
-  {
-    id: "3",
-    date: "2024-02-12",
-    title: "Challenging Day",
-    content: "Work was stressful today. Client meeting didn't go well but learned valuable lessons about preparation.",
-    mood: "sad",
-    tags: ["work", "lessons"],
-  },
-];
-
-const moodIcons = {
+const moodIcons: Record<string, React.ElementType> = {
   happy: Smile,
   neutral: Meh,
   sad: Frown,
 };
 
-const moodColors = {
+const moodColors: Record<string, string> = {
   happy: "text-neon-green",
   neutral: "text-amber-500",
   sad: "text-blue-400",
 };
 
 const Journal = () => {
-  const [entries] = useState(mockEntries);
+  const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [mood, setMood] = useState("neutral");
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (user) fetchEntries();
+  }, [user]);
+
+  const fetchEntries = async () => {
+    const { data, error } = await supabase
+      .from('journal_entries')
+      .select('*')
+      .order('entry_date', { ascending: false });
+    
+    if (!error) setEntries(data || []);
+    setLoading(false);
+  };
+
+  const addEntry = async () => {
+    if (!user || !title.trim()) return;
+    
+    const { data, error } = await supabase
+      .from('journal_entries')
+      .insert({
+        user_id: user.id,
+        title,
+        content,
+        mood,
+        entry_date: new Date().toISOString().split('T')[0],
+      })
+      .select()
+      .single();
+
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else if (data) {
+      setEntries([data, ...entries]);
+      setTitle("");
+      setContent("");
+      setMood("neutral");
+      setShowForm(false);
+      toast({ title: "Entry added!" });
+    }
+  };
+
+  const deleteEntry = async (id: string) => {
+    await supabase.from('journal_entries').delete().eq('id', id);
+    setEntries(entries.filter(e => e.id !== id));
+    toast({ title: "Entry deleted" });
+  };
 
   return (
     <>
       <Helmet>
         <title>Journal - Dar Lifegame OS</title>
-        <meta name="description" content="Document your journey with Dar Lifegame OS Journal." />
       </Helmet>
 
       <SubpageLayout 
@@ -73,56 +104,98 @@ const Journal = () => {
             <Pencil className="w-5 h-5" />
             <span>{entries.length} entries</span>
           </div>
-          <Button variant="hero" size="default">
+          <Button variant="hero" onClick={() => setShowForm(!showForm)}>
             <Sparkles className="w-4 h-4" />
             New Entry
           </Button>
         </div>
 
-        {/* Entries */}
-        <div className="space-y-4">
-          {entries.map((entry) => {
-            const MoodIcon = moodIcons[entry.mood];
-            return (
-              <div 
-                key={entry.id}
-                className="bg-card/30 rounded-2xl border border-border/50 p-6 hover:border-primary/30 transition-all group cursor-pointer"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                      <Calendar className="w-4 h-4" />
-                      <span>{new Date(entry.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
-                    </div>
-                    <h3 className="font-display text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
-                      {entry.title}
-                    </h3>
-                  </div>
-                  <MoodIcon className={`w-8 h-8 ${moodColors[entry.mood]}`} />
-                </div>
-                <p className="text-muted-foreground leading-relaxed mb-4">
-                  {entry.content}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {entry.tags.map((tag) => (
-                    <span 
-                      key={tag}
-                      className="px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs"
+        {/* New Entry Form */}
+        {showForm && (
+          <div className="bg-card/30 rounded-2xl border border-primary/30 p-6 mb-6">
+            <Input
+              placeholder="Entry title..."
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="mb-4 bg-muted/50"
+            />
+            <Textarea
+              placeholder="Write your thoughts..."
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={4}
+              className="mb-4 bg-muted/50"
+            />
+            <div className="flex items-center justify-between">
+              <div className="flex gap-2">
+                {(["happy", "neutral", "sad"] as const).map((m) => {
+                  const Icon = moodIcons[m];
+                  return (
+                    <button
+                      key={m}
+                      onClick={() => setMood(m)}
+                      className={`p-2 rounded-lg transition-colors ${
+                        mood === m ? "bg-primary/20 border border-primary" : "bg-muted/50"
+                      }`}
                     >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
+                      <Icon className={`w-6 h-6 ${moodColors[m]}`} />
+                    </button>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
+              <Button onClick={addEntry}>Save Entry</Button>
+            </div>
+          </div>
+        )}
 
-        {/* Add Entry Button */}
-        <button className="w-full mt-6 py-4 border-2 border-dashed border-border/50 rounded-xl text-muted-foreground hover:text-primary hover:border-primary/50 transition-colors flex items-center justify-center gap-2">
-          <Plus className="w-5 h-5" />
-          Write new journal entry
-        </button>
+        {/* Entries */}
+        {loading ? (
+          <div className="text-muted-foreground">Loading...</div>
+        ) : entries.length === 0 ? (
+          <div className="bg-card/30 rounded-2xl border border-border/50 p-12 text-center">
+            <Pencil className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <p className="text-muted-foreground">No journal entries yet. Start writing!</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {entries.map((entry) => {
+              const MoodIcon = entry.mood ? moodIcons[entry.mood] : Meh;
+              const moodColor = entry.mood ? moodColors[entry.mood] : "text-muted-foreground";
+              return (
+                <div 
+                  key={entry.id}
+                  className="bg-card/30 rounded-2xl border border-border/50 p-6 hover:border-primary/30 transition-all group"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                        <Calendar className="w-4 h-4" />
+                        <span>{new Date(entry.entry_date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
+                      </div>
+                      <h3 className="font-display text-xl font-semibold text-foreground">
+                        {entry.title}
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MoodIcon className={`w-8 h-8 ${moodColor}`} />
+                      <button 
+                        onClick={() => deleteEntry(entry.id)}
+                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  {entry.content && (
+                    <p className="text-muted-foreground leading-relaxed">
+                      {entry.content}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </SubpageLayout>
     </>
   );
