@@ -87,59 +87,59 @@ const ShoppingListWidget = () => {
   const checkedCount = items.filter(i => i.completed).length;
 
   return (
-    <div className="bg-card/30 rounded-xl border border-border/50 p-4">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <ShoppingCart className="w-4 h-4 text-primary" />
-          <h4 className="font-display text-sm font-semibold text-foreground">Shopping List</h4>
+    <div className="bg-card/30 rounded-lg sm:rounded-xl border border-border/50 p-3 sm:p-4">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+          <h4 className="font-display text-xs sm:text-sm font-semibold text-foreground">Shopping</h4>
         </div>
-        <span className="text-xs text-muted-foreground">{checkedCount}/{items.length}</span>
+        <span className="text-[10px] sm:text-xs text-muted-foreground">{checkedCount}/{items.length}</span>
       </div>
 
       {/* Quick Add */}
-      <div className="flex gap-2 mb-3">
+      <div className="flex gap-1.5 sm:gap-2 mb-2 sm:mb-3">
         <input
           type="text"
           value={newItem}
           onChange={(e) => setNewItem(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addItem()}
-          placeholder="Add item..."
-          className="flex-1 bg-muted/30 border border-border/50 rounded-lg px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+          placeholder="Add..."
+          className="flex-1 bg-muted/30 border border-border/50 rounded-md sm:rounded-lg px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
         />
         <button
           onClick={addItem}
-          className="p-1.5 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
+          className="p-1 sm:p-1.5 rounded-md sm:rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
         </button>
       </div>
 
       {loading ? (
-        <div className="space-y-2">
+        <div className="space-y-1.5 sm:space-y-2">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-6 bg-muted/30 rounded animate-pulse" />
+            <div key={i} className="h-5 sm:h-6 bg-muted/30 rounded animate-pulse" />
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="text-center py-2 text-muted-foreground text-sm">
-          <p>No items yet</p>
+        <div className="text-center py-2 text-muted-foreground text-xs sm:text-sm">
+          <p>No items</p>
         </div>
       ) : (
-        <div className="space-y-1 max-h-32 overflow-y-auto">
-          {items.map((item) => (
+        <div className="space-y-0.5 sm:space-y-1 max-h-24 sm:max-h-32 overflow-y-auto">
+          {items.slice(0, 5).map((item) => (
             <button
               key={item.id}
               onClick={() => toggleItem(item.id, item.completed)}
-              className="w-full flex items-center gap-2 py-1 hover:bg-muted/20 rounded px-1 -mx-1 transition-colors text-left"
+              className="w-full flex items-center gap-1.5 sm:gap-2 py-1 hover:bg-muted/20 rounded px-1 -mx-1 transition-colors text-left"
             >
-              <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+              <div className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${
                 item.completed 
                   ? "bg-primary border-primary" 
                   : "border-muted-foreground/50"
               }`}>
-                {item.completed && <Check className="w-3 h-3 text-primary-foreground" />}
+                {item.completed && <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-primary-foreground" />}
               </div>
-              <span className={`text-sm truncate ${
+              <span className={`text-xs sm:text-sm truncate ${
                 item.completed ? "line-through text-muted-foreground" : "text-foreground"
               }`}>
                 {item.title}

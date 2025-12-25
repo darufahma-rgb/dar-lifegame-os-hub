@@ -149,35 +149,35 @@ const UpcomingWidget = () => {
   };
 
   return (
-    <div className="bg-card/30 rounded-xl border border-border/50 p-4 h-full">
-      <h3 className="font-display text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+    <div className="bg-card/30 rounded-lg sm:rounded-xl border border-border/50 p-3 sm:p-4 h-full">
+      <h3 className="font-display text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4 flex items-center gap-2">
         <span className="text-muted-foreground">—</span> Upcoming
       </h3>
 
-      <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 mb-3 sm:mb-4 text-xs sm:text-sm text-muted-foreground">
         <span>All</span>
       </div>
 
       {loading ? (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {[1, 2, 3].map(i => (
             <div key={i} className="space-y-2">
-              <div className="h-4 w-20 bg-muted/30 rounded animate-pulse" />
-              <div className="h-6 bg-muted/30 rounded animate-pulse" />
-              <div className="h-6 bg-muted/30 rounded animate-pulse" />
+              <div className="h-3 sm:h-4 w-16 sm:w-20 bg-muted/30 rounded animate-pulse" />
+              <div className="h-5 sm:h-6 bg-muted/30 rounded animate-pulse" />
+              <div className="h-5 sm:h-6 bg-muted/30 rounded animate-pulse" />
             </div>
           ))}
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 max-h-64 sm:max-h-none overflow-y-auto">
           {renderGroup("Today", "today", tasks.today)}
           {renderGroup("Tomorrow", "tomorrow", tasks.tomorrow)}
           {renderGroup("Next 7 days", "next7Days", tasks.next7Days)}
           
           {tasks.today.length === 0 && tasks.tomorrow.length === 0 && tasks.next7Days.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <p className="text-sm">No upcoming tasks</p>
-              <Link to="/daily/planner" className="text-primary hover:underline text-sm">
+            <div className="text-center py-6 sm:py-8 text-muted-foreground">
+              <p className="text-xs sm:text-sm">No upcoming tasks</p>
+              <Link to="/daily/planner" className="text-primary hover:underline text-xs sm:text-sm">
                 Add a task
               </Link>
             </div>

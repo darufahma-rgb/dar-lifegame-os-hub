@@ -103,54 +103,51 @@ const HabitTrackerWidget = () => {
   const completedCount = habits.filter(h => h.completed).length;
 
   return (
-    <div className="bg-card/30 rounded-xl border border-border/50 p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="font-display text-sm font-semibold text-foreground">Habits</h4>
+    <div className="bg-card/30 rounded-lg sm:rounded-xl border border-border/50 p-3 sm:p-4">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <h4 className="font-display text-xs sm:text-sm font-semibold text-foreground">Habits</h4>
         <Link to="/daily/habits" className="text-muted-foreground hover:text-primary">
-          <ExternalLink className="w-4 h-4" />
+          <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
         </Link>
       </div>
 
-      <div className="text-xs text-muted-foreground mb-3">
-        {completedCount}/{habits.length} completed today
+      <div className="text-[10px] sm:text-xs text-muted-foreground mb-2 sm:mb-3">
+        {completedCount}/{habits.length} done
       </div>
 
       {loading ? (
-        <div className="space-y-2">
+        <div className="space-y-1.5 sm:space-y-2">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-8 bg-muted/30 rounded animate-pulse" />
+            <div key={i} className="h-7 sm:h-8 bg-muted/30 rounded animate-pulse" />
           ))}
         </div>
       ) : habits.length === 0 ? (
-        <div className="text-center py-4 text-muted-foreground text-sm">
-          <p>No habits yet.</p>
-          <Link to="/daily/habits" className="text-primary hover:underline">Add habits</Link>
+        <div className="text-center py-3 sm:py-4 text-muted-foreground text-xs sm:text-sm">
+          <p>No habits</p>
+          <Link to="/daily/habits" className="text-primary hover:underline">Add</Link>
         </div>
       ) : (
-        <div className="space-y-2">
-          {habits.map((habit) => {
-            const IconComponent = iconMap[habit.emoji] || Check;
-            return (
-              <button
-                key={habit.id}
-                onClick={() => toggleHabit(habit.id, habit.completed)}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
-                  habit.completed 
-                    ? "bg-primary/20 border border-primary/30" 
-                    : "bg-muted/30 border border-transparent hover:border-border/50"
-                }`}
-              >
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                  habit.completed ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                }`}>
-                  {habit.completed ? <Check className="w-4 h-4" /> : <span className="text-xs">{habit.emoji}</span>}
-                </div>
-                <span className={`text-sm ${habit.completed ? "text-primary line-through" : "text-foreground"}`}>
-                  {habit.name}
-                </span>
-              </button>
-            );
-          })}
+        <div className="space-y-1.5 sm:space-y-2">
+          {habits.slice(0, 4).map((habit) => (
+            <button
+              key={habit.id}
+              onClick={() => toggleHabit(habit.id, habit.completed)}
+              className={`w-full flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-1.5 sm:py-2 rounded-md sm:rounded-lg transition-all ${
+                habit.completed 
+                  ? "bg-primary/20 border border-primary/30" 
+                  : "bg-muted/30 border border-transparent hover:border-border/50"
+              }`}
+            >
+              <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                habit.completed ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+              }`}>
+                {habit.completed ? <Check className="w-3 h-3 sm:w-4 sm:h-4" /> : <span className="text-[10px] sm:text-xs">{habit.emoji}</span>}
+              </div>
+              <span className={`text-xs sm:text-sm truncate ${habit.completed ? "text-primary line-through" : "text-foreground"}`}>
+                {habit.name}
+              </span>
+            </button>
+          ))}
         </div>
       )}
     </div>
