@@ -58,10 +58,7 @@ const CalendarWidget = () => {
       // Fetch tasks for the month
       const { data: tasksData, error } = await supabase
         .from("tasks")
-        .select(`
-          id, title, due_date, priority,
-          categories (name, color)
-        `)
+        .select("id, title, due_date, priority")
         .eq("user_id", user.id)
         .gte("due_date", format(monthStart, "yyyy-MM-dd"))
         .lte("due_date", format(monthEnd, "yyyy-MM-dd"));
@@ -76,8 +73,8 @@ const CalendarWidget = () => {
         if (!tasksByDate[dateKey]) tasksByDate[dateKey] = [];
         tasksByDate[dateKey].push({
           title: task.title,
-          category: task.categories?.name || "Work",
-          categoryColor: task.categories?.color || "bg-purple-500",
+          category: "Task",
+          categoryColor: "bg-purple-500",
           priority: task.priority,
         });
       });
@@ -126,13 +123,13 @@ const CalendarWidget = () => {
   };
 
   return (
-    <section className="mt-8">
-      <h3 className="font-display text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+    <section className="mt-6 sm:mt-8">
+      <h3 className="font-display text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4 flex items-center gap-2">
         <span className="text-muted-foreground">—</span> Calendar
       </h3>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-2">
+      {/* Tabs - hidden on mobile for simplicity */}
+      <div className="hidden sm:flex items-center gap-1 mb-4 overflow-x-auto pb-2">
         {tabs.map((tab, idx) => (
           <button
             key={idx}
@@ -152,18 +149,18 @@ const CalendarWidget = () => {
         </button>
       </div>
 
-      <div className="bg-card/30 rounded-xl border border-border/50 overflow-hidden">
+      <div className="bg-card/30 rounded-lg sm:rounded-xl border border-border/50 overflow-hidden">
         {/* Calendar Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
-          <span className="font-medium text-foreground">
-            {format(currentDate, "MMMM yyyy")}
+        <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-border/50">
+          <span className="font-medium text-foreground text-sm sm:text-base">
+            {format(currentDate, "MMM yyyy")}
           </span>
-          <div className="flex items-center gap-2">
-            <button className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted/50">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <button className="hidden sm:flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted/50">
               <ExternalLink className="w-4 h-4" />
               Open
             </button>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5 sm:gap-1">
               <button 
                 onClick={() => setCurrentDate(subMonths(currentDate, 1))}
                 className="p-1 rounded hover:bg-muted/50 text-muted-foreground hover:text-foreground"
@@ -172,7 +169,7 @@ const CalendarWidget = () => {
               </button>
               <button 
                 onClick={() => setCurrentDate(new Date())}
-                className="text-sm text-muted-foreground hover:text-foreground px-2"
+                className="text-xs sm:text-sm text-muted-foreground hover:text-foreground px-1 sm:px-2"
               >
                 Today
               </button>
@@ -187,49 +184,61 @@ const CalendarWidget = () => {
         </div>
 
         {/* Calendar Grid */}
-        <div className="p-4">
+        <div className="p-2 sm:p-4">
           {/* Days of Week Header */}
-          <div className="grid grid-cols-7 gap-1 mb-2">
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-1 sm:mb-2">
             {daysOfWeek.map((day) => (
-              <div key={day} className="text-center text-xs text-muted-foreground py-2">
-                {day}
+              <div key={day} className="text-center text-[10px] sm:text-xs text-muted-foreground py-1 sm:py-2">
+                {day.slice(0, 1)}
+                <span className="hidden sm:inline">{day.slice(1)}</span>
               </div>
             ))}
           </div>
 
           {/* Calendar Days */}
           {loading ? (
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
               {Array.from({ length: 35 }).map((_, idx) => (
-                <div key={idx} className="min-h-[80px] p-1 rounded-lg border border-border/30">
-                  <div className="h-4 w-4 bg-muted/30 rounded animate-pulse mb-1" />
+                <div key={idx} className="min-h-[40px] sm:min-h-[80px] p-0.5 sm:p-1 rounded border border-border/30">
+                  <div className="h-3 w-3 sm:h-4 sm:w-4 bg-muted/30 rounded animate-pulse mb-1" />
                 </div>
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
               {calendarDays.map((day, idx) => {
                 const dayIsToday = isToday(day.date);
                 const hasHighPriority = day.events.some(e => e.priority === "high");
+                const hasEvents = day.events.length > 0;
                 
                 return (
                   <div
                     key={idx}
-                    className={`min-h-[80px] p-1 rounded-lg border transition-colors ${
+                    className={`min-h-[40px] sm:min-h-[80px] p-0.5 sm:p-1 rounded sm:rounded-lg border transition-colors ${
                       day.isCurrentMonth
                         ? "border-border/30 hover:border-border/60"
                         : "border-transparent opacity-40"
                     } ${hasHighPriority ? "bg-pink-500/10 border-pink-500/30" : ""}`}
                   >
-                    <div className={`text-xs mb-1 ${
+                    <div className={`text-[10px] sm:text-xs mb-0.5 sm:mb-1 ${
                       day.isCurrentMonth ? "text-foreground" : "text-muted-foreground/50"
                     } ${dayIsToday ? "text-primary font-bold" : ""}`}>
-                      {day.date.getDate() === 1 
-                        ? format(day.date, "MMM d") 
-                        : day.date.getDate()
-                      }
+                      {day.date.getDate()}
                     </div>
-                    <div className="space-y-0.5">
+                    {/* Mobile: Just show dots for events */}
+                    <div className="sm:hidden flex gap-0.5 flex-wrap">
+                      {day.events.slice(0, 3).map((event, eventIdx) => (
+                        <div
+                          key={eventIdx}
+                          className={`w-1.5 h-1.5 rounded-full ${getCategoryColor(event.categoryColor)} ${event.priority === "high" ? "ring-1 ring-pink-400" : ""}`}
+                        />
+                      ))}
+                      {day.events.length > 3 && (
+                        <span className="text-[8px] text-muted-foreground">+{day.events.length - 3}</span>
+                      )}
+                    </div>
+                    {/* Desktop: Show event details */}
+                    <div className="hidden sm:block space-y-0.5">
                       {day.events.slice(0, 2).map((event, eventIdx) => (
                         <div
                           key={eventIdx}

@@ -23,10 +23,10 @@ interface CategoryCardProps {
 }
 
 const CategoryCard = ({ title, image, items, gradient }: CategoryCardProps) => (
-  <div className="space-y-3">
+  <div className="space-y-2 sm:space-y-3">
     <Link 
       to={items[0]?.href || "#"}
-      className="block relative h-32 rounded-xl overflow-hidden group cursor-pointer"
+      className="block relative h-20 sm:h-32 rounded-lg sm:rounded-xl overflow-hidden group cursor-pointer"
     >
       <img 
         src={image} 
@@ -35,21 +35,21 @@ const CategoryCard = ({ title, image, items, gradient }: CategoryCardProps) => (
       />
       <div className={`absolute inset-0 ${gradient} opacity-60`} />
       <div className="absolute inset-0 flex items-center justify-center">
-        <h3 className="font-display text-xl font-bold text-foreground tracking-wide">
+        <h3 className="font-display text-sm sm:text-xl font-bold text-foreground tracking-wide">
           {title}
         </h3>
       </div>
-      <div className="absolute inset-0 border border-primary/0 group-hover:border-primary/50 rounded-xl transition-all duration-300" />
+      <div className="absolute inset-0 border border-primary/0 group-hover:border-primary/50 rounded-lg sm:rounded-xl transition-all duration-300" />
     </Link>
-    <div className="space-y-1">
+    <div className="space-y-0.5 sm:space-y-1">
       {items.map((item, idx) => (
         <Link
           key={idx}
           to={item.href}
-          className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors text-sm"
+          className="flex items-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors text-xs sm:text-sm"
         >
-          <item.icon className="w-4 h-4" />
-          <span>{item.label}</span>
+          <item.icon className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+          <span className="truncate">{item.label}</span>
         </Link>
       ))}
     </div>
@@ -101,15 +101,15 @@ const categories = [
 
 const DashboardNav = () => {
   return (
-    <section className="py-8">
-      <div className="mb-6">
-        <h2 className="font-display text-2xl font-bold text-foreground">Life Planner</h2>
-        <p className="text-muted-foreground text-sm mt-1 border-l-2 border-primary pl-3">
+    <section className="py-4 sm:py-8">
+      <div className="mb-4 sm:mb-6">
+        <h2 className="font-display text-xl sm:text-2xl font-bold text-foreground">Life Planner</h2>
+        <p className="text-muted-foreground text-xs sm:text-sm mt-1 border-l-2 border-primary pl-3">
           All your thoughts in one private place.
         </p>
       </div>
       
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
         {categories.map((category, idx) => (
           <CategoryCard key={idx} {...category} />
         ))}

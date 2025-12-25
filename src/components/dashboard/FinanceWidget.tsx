@@ -111,65 +111,55 @@ const FinanceWidget = () => {
   };
 
   return (
-    <div className="bg-card/30 rounded-xl border border-border/50 p-4">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Wallet className="w-4 h-4 text-primary" />
-          <h4 className="font-display text-sm font-semibold text-foreground">Finance</h4>
+    <div className="bg-card/30 rounded-lg sm:rounded-xl border border-border/50 p-3 sm:p-4">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+          <h4 className="font-display text-xs sm:text-sm font-semibold text-foreground">Finance</h4>
         </div>
         <Link to="/personal/finance" className="text-muted-foreground hover:text-primary">
-          <ExternalLink className="w-4 h-4" />
+          <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
         </Link>
       </div>
 
       {loading ? (
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-12 bg-muted/30 rounded animate-pulse" />
+            <div key={i} className="h-10 sm:h-12 bg-muted/30 rounded animate-pulse" />
           ))}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           {/* Income */}
-          <div className="flex items-center justify-between p-2 rounded-lg bg-green-500/10">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-green-400" />
-              <span className="text-xs text-muted-foreground">Income</span>
+          <div className="flex items-center justify-between p-1.5 sm:p-2 rounded-md sm:rounded-lg bg-green-500/10">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />
+              <span className="text-[10px] sm:text-xs text-muted-foreground">In</span>
             </div>
             <div className="text-right">
-              <div className="text-sm font-medium text-green-400">
+              <div className="text-xs sm:text-sm font-medium text-green-400">
                 {formatCurrency(summary.income)}
               </div>
-              {summary.incomeChange !== 0 && (
-                <div className={`text-xs ${summary.incomeChange > 0 ? "text-green-400" : "text-red-400"}`}>
-                  {summary.incomeChange > 0 ? "+" : ""}{summary.incomeChange.toFixed(1)}%
-                </div>
-              )}
             </div>
           </div>
 
           {/* Expense */}
-          <div className="flex items-center justify-between p-2 rounded-lg bg-red-500/10">
-            <div className="flex items-center gap-2">
-              <TrendingDown className="w-4 h-4 text-red-400" />
-              <span className="text-xs text-muted-foreground">Expense</span>
+          <div className="flex items-center justify-between p-1.5 sm:p-2 rounded-md sm:rounded-lg bg-red-500/10">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4 text-red-400" />
+              <span className="text-[10px] sm:text-xs text-muted-foreground">Out</span>
             </div>
             <div className="text-right">
-              <div className="text-sm font-medium text-red-400">
+              <div className="text-xs sm:text-sm font-medium text-red-400">
                 {formatCurrency(summary.expense)}
               </div>
-              {summary.expenseChange !== 0 && (
-                <div className={`text-xs ${summary.expenseChange < 0 ? "text-green-400" : "text-red-400"}`}>
-                  {summary.expenseChange > 0 ? "+" : ""}{summary.expenseChange.toFixed(1)}%
-                </div>
-              )}
             </div>
           </div>
 
           {/* Balance */}
-          <div className="flex items-center justify-between p-2 rounded-lg bg-primary/10 border border-primary/20">
-            <span className="text-xs text-muted-foreground">Balance</span>
-            <div className={`text-sm font-bold ${summary.balance >= 0 ? "text-primary" : "text-red-400"}`}>
+          <div className="flex items-center justify-between p-1.5 sm:p-2 rounded-md sm:rounded-lg bg-primary/10 border border-primary/20">
+            <span className="text-[10px] sm:text-xs text-muted-foreground">Balance</span>
+            <div className={`text-xs sm:text-sm font-bold ${summary.balance >= 0 ? "text-primary" : "text-red-400"}`}>
               {formatCurrency(summary.balance)}
             </div>
           </div>

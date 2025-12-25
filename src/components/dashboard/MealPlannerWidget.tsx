@@ -76,49 +76,49 @@ const MealPlannerWidget = () => {
   });
 
   return (
-    <div className="bg-card/30 rounded-xl border border-border/50 p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="font-display text-sm font-semibold text-foreground">Today's Meals</h4>
+    <div className="bg-card/30 rounded-lg sm:rounded-xl border border-border/50 p-3 sm:p-4">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <h4 className="font-display text-xs sm:text-sm font-semibold text-foreground">Meals</h4>
         <Link to="/planners/meal" className="text-muted-foreground hover:text-primary">
-          <ExternalLink className="w-4 h-4" />
+          <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
         </Link>
       </div>
 
       {loading ? (
-        <div className="space-y-2">
+        <div className="space-y-1.5 sm:space-y-2">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-12 bg-muted/30 rounded animate-pulse" />
+            <div key={i} className="h-10 sm:h-12 bg-muted/30 rounded animate-pulse" />
           ))}
         </div>
       ) : meals.length === 0 ? (
-        <div className="text-center py-4 text-muted-foreground text-sm">
-          <p>No meals planned.</p>
-          <Link to="/planners/meal" className="text-primary hover:underline">Plan meals</Link>
+        <div className="text-center py-3 sm:py-4 text-muted-foreground text-xs sm:text-sm">
+          <p>No meals</p>
+          <Link to="/planners/meal" className="text-primary hover:underline">Plan</Link>
         </div>
       ) : (
-        <div className="space-y-2">
-          {sortedMeals.map((meal) => {
+        <div className="space-y-1.5 sm:space-y-2">
+          {sortedMeals.slice(0, 3).map((meal) => {
             const IconComponent = mealTypeIcons[meal.meal_type || "snack"] || UtensilsCrossed;
             return (
               <button
                 key={meal.id}
                 onClick={() => toggleMeal(meal.id, meal.completed)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-left ${
+                className={`w-full flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 sm:py-2.5 rounded-md sm:rounded-lg transition-all text-left ${
                   meal.completed 
                     ? "bg-primary/10 border border-primary/20" 
                     : "bg-muted/20 border border-transparent hover:border-border/50"
                 }`}
               >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-md sm:rounded-lg flex items-center justify-center flex-shrink-0 ${
                   meal.completed ? "bg-primary/20" : "bg-muted/50"
                 }`}>
-                  <IconComponent className={`w-4 h-4 ${meal.completed ? "text-primary" : "text-muted-foreground"}`} />
+                  <IconComponent className={`w-3 h-3 sm:w-4 sm:h-4 ${meal.completed ? "text-primary" : "text-muted-foreground"}`} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={`text-sm truncate ${meal.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                  <div className={`text-xs sm:text-sm truncate ${meal.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
                     {meal.title}
                   </div>
-                  <div className="text-xs text-muted-foreground capitalize">
+                  <div className="text-[10px] sm:text-xs text-muted-foreground capitalize">
                     {meal.meal_type || "Meal"}
                   </div>
                 </div>
